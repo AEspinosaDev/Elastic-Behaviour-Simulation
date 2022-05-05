@@ -207,3 +207,17 @@ public class Node
 
     }
 }
+
+public struct VertexInfo
+{
+    int id;
+    Vector3 pos;
+    float weight;
+
+    public VertexInfo(int id, Vector3 pos, float weight)
+    {
+        this.id = id;
+        this.pos = pos;
+        this.weight = weight;
+    }
+}

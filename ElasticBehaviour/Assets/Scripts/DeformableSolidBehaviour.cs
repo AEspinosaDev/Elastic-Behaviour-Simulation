@@ -22,16 +22,17 @@ public class DeformableSolidBehaviour : MonoBehaviour
 
     [HideInInspector] Parser m_Parser;
 
-    [HideInInspector] Mesh m_Mesh;
+    [HideInInspector] MeshFilter m_Mesh;
+
+    [HideInInspector] List<Tetrahedron> m_Tetras;
 
     [HideInInspector] int m_NodesCount;
     [HideInInspector] int m_TetrasCount;
 
-    [HideInInspector] private Vector3[] m_ProxyVertices;
 
-    [HideInInspector] private Vector3[] m_Vertices;
+    [HideInInspector] private List<VertexInfo> m_VerticesInfo;
 
-    [HideInInspector] private int[] m_ProxyTriangles;
+    //[HideInInspector] private int[] m_ProxyTriangles;
 
     [HideInInspector] private List<Node> m_Nodes;
 
@@ -46,6 +47,8 @@ public class DeformableSolidBehaviour : MonoBehaviour
     [HideInInspector] private float m_SubTimeStep;
 
     [HideInInspector] public float m_NodeMass;
+
+    [HideInInspector] public bool m_Ready = false;
 
 
     #endregion 
@@ -98,7 +101,7 @@ public class DeformableSolidBehaviour : MonoBehaviour
     [HideInInspector] public WindPrecission m_WindSolverPrecission;
 
     [HideInInspector] public Texture2D m_Texture;
-    [HideInInspector] public List<GameObject> m_Fixers;
+    public List<GameObject> m_Fixers;
 
     [HideInInspector] public List<GameObject> m_CollidingMeshes;
 
@@ -140,6 +143,8 @@ public class DeformableSolidBehaviour : MonoBehaviour
         m_CanCollide = false;
         m_PenaltyStiffness = 10f;
         m_CollisionOffsetDistance = 0.3f;
+
+        m_Ready = true;
     }
     public enum Solver
     {
@@ -186,18 +191,41 @@ public class DeformableSolidBehaviour : MonoBehaviour
 
     public void Start()
     {
-        
-        
 
         m_Parser = GetComponent<Parser>();
 
         m_Nodes = new List<Node>();
-        List<Tetrahedron> m_Tetras = new List<Tetrahedron>();
+        m_Tetras = new List<Tetrahedron>();
 
-        m_Parser.completeParse(m_Nodes, m_Tetras, this);
+        m_Parser.CompleteParse(m_Nodes, m_Tetras, this);
 
         m_NodesCount = m_Nodes.Count;
         m_TetrasCount = m_Tetras.Count;
+
+
+        m_Mesh = GetComponent<MeshFilter>();
+        print(m_Mesh.mesh.vertexCount);
+        //Check if node is inside
+        for (int i = 0; i < m_Mesh.mesh.vertexCount; i++)
+        {
+            Vector3 globalPos = transform.TransformPoint(m_Mesh.mesh.vertices[i]);
+            print(globalPos);
+            foreach (var tetra in m_Tetras)
+            {
+                if (tetra.PointInside(globalPos))
+                {
+                    //   m_VerticesInfo.Add(new VertexInfo(i, globalPos, calcularPeso());
+                    print("SI ESTA DENTRO"+ i);
+                    //break;
+                }
+
+            }
+
+        }
+
+
+
+
 
         m_Springs = new List<Spring>();
 
@@ -227,11 +255,11 @@ public class DeformableSolidBehaviour : MonoBehaviour
         }
 
         //Debug
-        print(edgeDictionary.Count);
-        foreach (var e in edgeDictionary)
-        {
-            print(e.Value.m_A + " " + e.Value.m_B);
-        }
+        //print(edgeDictionary.Count);
+        //foreach (var e in edgeDictionary)
+        //{
+        //    print(e.Value.m_A + " " + e.Value.m_B);
+        //}
         //
 
 
@@ -244,32 +272,52 @@ public class DeformableSolidBehaviour : MonoBehaviour
 
 
 
-        ////Attach to fixers
-        //if (m_FixingByTexture)
-        //    CheckTextureWeights();
-        //else
-        //    CheckFixers();
+        //Attach to fixers
+        if (m_FixingByTexture)
+            CheckTextureWeights();
+        else
+            CheckFixers();
 
         //Look for Wind objs
         //CheckWindObjects();
     }
     public void OnDrawGizmos()
     {
-
+        //if (m_Ready)
+        //{
         foreach (var n in m_Nodes)
         {
-            Gizmos.color = Color.blue;
+            Gizmos.color = Color.green;
             //Gizmos.DrawSphere(transform.TransformPoint(n.m_Pos), 0.2f);
-            Gizmos.DrawSphere(n.m_Pos, 0.2f);
+            Gizmos.DrawSphere(n.m_Pos, 0.1f);
         }
         foreach (var s in m_Springs)
         {
-            Gizmos.color = Color.red;
+            Gizmos.color = Color.green;
             //Gizmos.DrawLine(transform.TransformPoint(s.m_NodeA.m_Pos), transform.TransformPoint(s.m_NodeB.m_Pos));
             Gizmos.DrawLine(s.m_NodeA.m_Pos, s.m_NodeB.m_Pos);
         }
+        //}
 
     }
+    //private void OnDrawGizmosSelected()
+    //{
+
+    //    foreach (var n in m_Nodes)
+    //    {
+    //        Gizmos.color = Color.green;
+    //        //Gizmos.DrawSphere(transform.TransformPoint(n.m_Pos), 0.2f);
+    //        Gizmos.DrawSphere(n.m_Pos, 0.2f);
+    //    }
+    //    foreach (var s in m_Springs)
+    //    {
+    //        Gizmos.color = Color.green;
+    //        //Gizmos.DrawLine(transform.TransformPoint(s.m_NodeA.m_Pos), transform.TransformPoint(s.m_NodeB.m_Pos));
+    //        Gizmos.DrawLine(s.m_NodeA.m_Pos, s.m_NodeB.m_Pos);
+    //    }
+
+
+    //}
 
     public void Update()
     {
@@ -698,3 +746,4 @@ public class DeformableSolidBehaviour : MonoBehaviour
         //    }
     }
 }
+

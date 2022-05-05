@@ -108,6 +108,8 @@ public class Tetrahedron
     public Node m_C;
     public Node m_D;
 
+    public float m_Volume;
+
     public Tetrahedron(int id, Node a, Node b, Node c, Node d)
     {
         this.id = id;
@@ -115,6 +117,29 @@ public class Tetrahedron
         m_B = b;
         m_C = c;
         m_D = d;
+
+        m_Volume = RomputeVolume();
     }
+    private float RomputeVolume()
+    {
+        Vector3 crossProduct = Vector3.Cross(m_A.m_Pos - m_D.m_Pos, m_B.m_Pos - m_D.m_Pos);
+        return Vector3.Dot(crossProduct, m_C.m_Pos - m_D.m_Pos) / 6;
+    }
+    public bool PointInside(Vector3 p)
+    {
+
+        Vector3 normal1 = Vector3.Cross(m_A.m_Pos - m_B.m_Pos, m_A.m_Pos - m_C.m_Pos).normalized;
+        Vector3 normal2 = Vector3.Cross(m_D.m_Pos - m_A.m_Pos, m_D.m_Pos - m_B.m_Pos).normalized;
+        Vector3 normal3 = Vector3.Cross(m_D.m_Pos - m_A.m_Pos, m_D.m_Pos - m_C.m_Pos).normalized;
+        Vector3 normal4 = Vector3.Cross(m_D.m_Pos - m_C.m_Pos, m_D.m_Pos - m_B.m_Pos).normalized;
+
+        if (m_A.m_Pos.x * p.x + m_A.m_Pos.y * p.y + m_A.m_Pos.z * p.z + Vector3.Dot(p, normal1) >= 0)
+            if (m_A.m_Pos.x * p.x + m_A.m_Pos.y * p.y + m_A.m_Pos.z * p.z + Vector3.Dot(p, normal2) >= 0)
+                if (m_A.m_Pos.x * p.x + m_A.m_Pos.y * p.y + m_A.m_Pos.z * p.z + Vector3.Dot(p, normal3) >= 0)
+                    if (m_D.m_Pos.x * p.x + m_D.m_Pos.y * p.y + m_D.m_Pos.z * p.z + Vector3.Dot(p, normal4) >= 0) return true;
+
+        return false;
+    }
+
 }
 
