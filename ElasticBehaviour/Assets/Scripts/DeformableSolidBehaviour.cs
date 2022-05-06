@@ -22,17 +22,20 @@ public class DeformableSolidBehaviour : MonoBehaviour
 
     [HideInInspector] Parser m_Parser;
 
-    [HideInInspector] MeshFilter m_Mesh;
+    [HideInInspector] Mesh m_Mesh;
 
     [HideInInspector] List<Tetrahedron> m_Tetras;
 
     [HideInInspector] int m_NodesCount;
     [HideInInspector] int m_TetrasCount;
+    [HideInInspector] int m_VertexCount;
+
 
 
     [HideInInspector] private List<VertexInfo> m_VerticesInfo;
 
-    //[HideInInspector] private int[] m_ProxyTriangles;
+    [HideInInspector] private Vector3[] m_Vertices;
+
 
     [HideInInspector] private List<Node> m_Nodes;
 
@@ -196,6 +199,7 @@ public class DeformableSolidBehaviour : MonoBehaviour
 
         m_Nodes = new List<Node>();
         m_Tetras = new List<Tetrahedron>();
+        m_VerticesInfo = new List<VertexInfo>();
 
         m_Parser.CompleteParse(m_Nodes, m_Tetras, this);
 
@@ -203,29 +207,16 @@ public class DeformableSolidBehaviour : MonoBehaviour
         m_TetrasCount = m_Tetras.Count;
 
 
-        m_Mesh = GetComponent<MeshFilter>();
-        print(m_Mesh.mesh.vertexCount);
-        //Check if node is inside
-        for (int i = 0; i < m_Mesh.mesh.vertexCount; i++)
-        {
-            Vector3 globalPos = transform.TransformPoint(m_Mesh.mesh.vertices[i]);
-            print(globalPos);
-            foreach (var tetra in m_Tetras)
-            {
-                if (tetra.PointInside(globalPos))
-                {
-                    //   m_VerticesInfo.Add(new VertexInfo(i, globalPos, calcularPeso());
-                    print("SI ESTA DENTRO"+ i);
-                    //break;
-                }
+        m_Mesh = GetComponent<MeshFilter>().mesh;
 
-            }
+        m_VertexCount = m_Mesh.vertexCount;
+        m_Vertices = m_Mesh.vertices;
+        //foreach (var item in m_Vertices)
+        //{
+        //    print(item);
+        //}
 
-        }
-
-
-
-
+        CheckContainingTetraPerVertex();
 
         m_Springs = new List<Spring>();
 
@@ -288,15 +279,35 @@ public class DeformableSolidBehaviour : MonoBehaviour
         foreach (var n in m_Nodes)
         {
             Gizmos.color = Color.green;
-            //Gizmos.DrawSphere(transform.TransformPoint(n.m_Pos), 0.2f);
             Gizmos.DrawSphere(n.m_Pos, 0.1f);
         }
         foreach (var s in m_Springs)
         {
             Gizmos.color = Color.green;
-            //Gizmos.DrawLine(transform.TransformPoint(s.m_NodeA.m_Pos), transform.TransformPoint(s.m_NodeB.m_Pos));
             Gizmos.DrawLine(s.m_NodeA.m_Pos, s.m_NodeB.m_Pos);
         }
+        int i = 0;
+        //foreach (var v in m_Mesh.vertices)
+        //{
+        //    Gizmos.color = Color.red;
+        //    //Gizmos.DrawIcon(v, i.ToString());
+        //    Handles.Label(v+new Vector3(0,i*0.1f,0), i.ToString());
+        //    i++;
+        //}
+        Vector3 normal1 = Vector3.Cross(m_Tetras[0].m_B.m_Pos - m_Tetras[0].m_A.m_Pos, m_Tetras[0].m_C.m_Pos - m_Tetras[0].m_A.m_Pos);
+        Vector3 normal2 = Vector3.Cross( m_Tetras[0].m_C.m_Pos -  m_Tetras[0].m_A.m_Pos,  m_Tetras[0].m_D.m_Pos -  m_Tetras[0].m_A.m_Pos);
+        Vector3 normal3 = Vector3.Cross(   m_Tetras[0].m_D.m_Pos -  m_Tetras[0].m_A.m_Pos, m_Tetras[0].m_B.m_Pos - m_Tetras[0].m_A.m_Pos);
+        Vector3 normal4 = Vector3.Cross(m_Tetras[0].m_D.m_Pos - m_Tetras[0].m_B.m_Pos, m_Tetras[0].m_C.m_Pos - m_Tetras[0].m_B.m_Pos);
+
+        Gizmos.color = Color.red;
+        Gizmos.DrawLine(m_Tetras[0].m_A.m_Pos, m_Tetras[0].m_A.m_Pos - normal1 );
+        Gizmos.DrawLine(m_Tetras[0].m_A.m_Pos, m_Tetras[0].m_A.m_Pos - normal2 );
+        Gizmos.DrawLine(m_Tetras[0].m_A.m_Pos, m_Tetras[0].m_A.m_Pos - normal3 );
+        Gizmos.DrawLine(m_Tetras[0].m_D.m_Pos, m_Tetras[0].m_D.m_Pos - normal4 );
+
+
+
+
         //}
 
     }
@@ -347,18 +358,28 @@ public class DeformableSolidBehaviour : MonoBehaviour
             }
         }
 
+        for (int i = 0; i < m_VertexCount; i++)
+        {
 
 
+            Vector3 newPos = m_VerticesInfo[i].w_A * m_Tetras[m_VerticesInfo[i].tetra_id].m_A.m_Pos +
+                m_VerticesInfo[i].w_B * m_Tetras[m_VerticesInfo[i].tetra_id].m_B.m_Pos +
+                m_VerticesInfo[i].w_C * m_Tetras[m_VerticesInfo[i].tetra_id].m_C.m_Pos +
+                m_VerticesInfo[i].w_D * m_Tetras[m_VerticesInfo[i].tetra_id].m_D.m_Pos;
+
+            //print("antes"+newPos);
+            newPos = transform.InverseTransformPoint(newPos);
+            //print(newPos);
+
+            m_Vertices[i] = newPos;
+
+        }
+        m_Mesh.vertices = m_Vertices;
+
+        m_Mesh.RecalculateNormals();
+        m_Mesh.RecalculateTangents();
 
 
-
-
-        //for (int i = 0; i < m_Mesh.vertexCount; i++)
-        //{
-        //    m_ProxyVertices[i] = transform.InverseTransformPoint(m_Nodes[i].m_Pos);
-        //}
-
-        //m_Mesh.vertices = m_ProxyVertices;
     }
 
     public void FixedUpdate()
@@ -630,6 +651,34 @@ public class DeformableSolidBehaviour : MonoBehaviour
 
 
     #endregion
+    /// <summary>
+    /// Iterates through all mesh vertices and checks what is the tetrahedron in which each vertex is contained, assigning the weights necesary to compute the position
+    /// in the physic solving.
+    /// </summary>
+    private void CheckContainingTetraPerVertex()
+    {
+        //Check if node is inside
+        for (int i = 0; i < m_VertexCount; i++)
+        {
+            Vector3 globalPos = transform.TransformPoint(m_Mesh.vertices[i]);
+            //print(globalPos);
+
+            foreach (var tetra in m_Tetras)
+            {
+                if (tetra.PointInside(globalPos))
+                {
+                    tetra.ComputeVertexWeights(globalPos, out float wA, out float wB, out float wC, out float wD);
+                    print(i + " = " + wA+" "+wB+" "+wC+" "+wD);
+                    m_VerticesInfo.Add(new VertexInfo(i, tetra.id, wA, wB, wC, wD));
+                    print("SI, ESTA DENTRO" + i);
+                    break;
+                }
+
+            }
+
+        }
+
+    }
     /// <summary>
     /// Checks whether the vertex is inside the fixer colliders in order to put it in a fixed state.
     /// </summary>

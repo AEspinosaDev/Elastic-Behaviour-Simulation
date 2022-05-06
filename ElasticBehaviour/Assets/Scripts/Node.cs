@@ -43,7 +43,7 @@ public class Node
 
     }
 
-    
+
     /// <summary>
     /// Computes the resultant force of the node without taking in count the spring contraction force
     /// </summary>
@@ -210,14 +210,24 @@ public class Node
 
 public struct VertexInfo
 {
-    int id;
-    Vector3 pos;
-    float weight;
+    public int id;
+    public int tetra_id;
 
-    public VertexInfo(int id, Vector3 pos, float weight)
+    public float w_A;
+    public float w_B;
+    public float w_C;
+    public float w_D;
+
+
+    public VertexInfo(int id, int tetra_id, float weight1, float weight2, float weight3, float weight4)
     {
         this.id = id;
-        this.pos = pos;
-        this.weight = weight;
+        this.tetra_id = tetra_id;
+        this.w_A = weight1;
+        this.w_B = weight2;
+        this.w_C = weight3;
+        this.w_D = weight4;
+
     }
+   
 }
