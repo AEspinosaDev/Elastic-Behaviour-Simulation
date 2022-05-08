@@ -30,8 +30,6 @@ public class DeformableSolidBehaviour : MonoBehaviour
     [HideInInspector] int m_TetrasCount;
     [HideInInspector] int m_VertexCount;
 
-
-
     [HideInInspector] private List<VertexInfo> m_VerticesInfo;
 
     [HideInInspector] private Vector3[] m_Vertices;
@@ -49,7 +47,7 @@ public class DeformableSolidBehaviour : MonoBehaviour
 
     [HideInInspector] private float m_SubTimeStep;
 
-    [HideInInspector] public float m_NodeMass;
+    //[HideInInspector] public float m_NodeMass;
 
     [HideInInspector] public bool m_Ready = false;
 
@@ -74,7 +72,7 @@ public class DeformableSolidBehaviour : MonoBehaviour
     [SerializeField] public Vector3 m_Gravity;
 
     [Tooltip("Controls the mass of the entire mesh, assuming it will be equally divided into each node.")]
-    [SerializeField] [Range(0, 50)] public float m_MeshMass;
+    [SerializeField] [Range(0, 50)] public float m_MeshDensity;
 
     [Tooltip("Higher values means more reduction in vertex movement.")]
     [SerializeField] [Range(0f, 5f)] public float m_NodeDamping;
@@ -128,7 +126,7 @@ public class DeformableSolidBehaviour : MonoBehaviour
         m_TractionStiffness = 20f;
         m_FlexionStiffness = 15f;
 
-        m_MeshMass = 3.63f;
+        m_MeshDensity = 3.63f;
 
         m_NodeDamping = 0.3f;
         m_SpringDamping = 0.3f;
@@ -168,7 +166,7 @@ public class DeformableSolidBehaviour : MonoBehaviour
     private void LowResSetup()
     {
         m_TimeStep = 0.02f; m_Paused = true;
-        m_TractionStiffness = 20f; m_FlexionStiffness = 15f; m_MeshMass = 3.6f; m_NodeDamping = 0.3f; m_SpringDamping = 0.3f;
+        m_TractionStiffness = 20f; m_FlexionStiffness = 15f; m_MeshDensity = 3.6f; m_NodeDamping = 0.3f; m_SpringDamping = 0.3f;
         m_SolvingMethod = Solver.Simplectic;
         m_WindSolverPrecission = WindPrecission.High;
     }
@@ -176,7 +174,7 @@ public class DeformableSolidBehaviour : MonoBehaviour
     private void MedResSetup()
     {
         m_TimeStep = 0.01f; m_Substeps = 2; m_Paused = true;
-        m_TractionStiffness = 50f; m_FlexionStiffness = 30f; m_MeshMass = 20f; m_NodeDamping = 0.3f; m_SpringDamping = 0.3f;
+        m_TractionStiffness = 50f; m_FlexionStiffness = 30f; m_MeshDensity = 20f; m_NodeDamping = 0.3f; m_SpringDamping = 0.3f;
         m_SolvingMethod = Solver.Simplectic;
         m_WindSolverPrecission = WindPrecission.Medium;
     }
@@ -184,7 +182,7 @@ public class DeformableSolidBehaviour : MonoBehaviour
     private void HighResSetup()
     {
         m_TimeStep = 0.007f; m_Substeps = 1; m_Paused = true;
-        m_TractionStiffness = 100f; m_FlexionStiffness = 80f; m_MeshMass = 50f; m_NodeDamping = 0.3f; m_SpringDamping = 0.3f;
+        m_TractionStiffness = 100f; m_FlexionStiffness = 80f; m_MeshDensity = 50f; m_NodeDamping = 0.3f; m_SpringDamping = 0.3f;
         m_SolvingMethod = Solver.Simplectic;
         m_WindSolverPrecission = WindPrecission.Low;
     }
@@ -211,10 +209,6 @@ public class DeformableSolidBehaviour : MonoBehaviour
 
         m_VertexCount = m_Mesh.vertexCount;
         m_Vertices = m_Mesh.vertices;
-        //foreach (var item in m_Vertices)
-        //{
-        //    print(item);
-        //}
 
         CheckContainingTetraPerVertex();
 
@@ -228,40 +222,33 @@ public class DeformableSolidBehaviour : MonoBehaviour
         for (int i = 0; i < m_TetrasCount; i++)
         {
             List<Edge> edges = new List<Edge>();
-            edges.Add(new Edge(m_Tetras[i].m_A.m_Id, m_Tetras[i].m_B.m_Id, 0));
-            edges.Add(new Edge(m_Tetras[i].m_B.m_Id, m_Tetras[i].m_C.m_Id, 0));
-            edges.Add(new Edge(m_Tetras[i].m_C.m_Id, m_Tetras[i].m_A.m_Id, 0));
-            edges.Add(new Edge(m_Tetras[i].m_D.m_Id, m_Tetras[i].m_A.m_Id, 0));
-            edges.Add(new Edge(m_Tetras[i].m_D.m_Id, m_Tetras[i].m_B.m_Id, 0));
-            edges.Add(new Edge(m_Tetras[i].m_D.m_Id, m_Tetras[i].m_C.m_Id, 0));
+            edges.Add(new Edge(m_Tetras[i].m_A.m_Id, m_Tetras[i].m_B.m_Id, m_Tetras[i]));
+            edges.Add(new Edge(m_Tetras[i].m_B.m_Id, m_Tetras[i].m_C.m_Id, m_Tetras[i]));
+            edges.Add(new Edge(m_Tetras[i].m_C.m_Id, m_Tetras[i].m_A.m_Id, m_Tetras[i]));
+            edges.Add(new Edge(m_Tetras[i].m_D.m_Id, m_Tetras[i].m_A.m_Id, m_Tetras[i]));
+            edges.Add(new Edge(m_Tetras[i].m_D.m_Id, m_Tetras[i].m_B.m_Id, m_Tetras[i]));
+            edges.Add(new Edge(m_Tetras[i].m_D.m_Id, m_Tetras[i].m_C.m_Id, m_Tetras[i]));
 
             foreach (var edge in edges)
             {
                 if (!edgeDictionary.TryGetValue(edge, out repeatedEdge))
                 {
-                    m_Springs.Add(new Spring(m_Nodes[edge.m_A], m_Nodes[edge.m_B], this, true));
                     edgeDictionary.Add(edge, edge);
                 }
+                else
+                {
+                    repeatedEdge.m_Tetras.Add(m_Tetras[i]);
+                }
+
+
             }
         }
-
-        //Debug
-        //print(edgeDictionary.Count);
-        //foreach (var e in edgeDictionary)
-        //{
-        //    print(e.Value.m_A + " " + e.Value.m_B);
-        //}
-        //
-
-
-
-        m_NodeMass = m_MeshMass / m_NodesCount;
+        foreach (var edge in edgeDictionary)
+        {
+            m_Springs.Add(new Spring(m_Nodes[edge.Value.m_A], m_Nodes[edge.Value.m_B], this,edge.Value.m_Tetras));
+        }
 
         m_SubTimeStep = m_TimeStep / m_Substeps;
-
-
-
-
 
         //Attach to fixers
         if (m_FixingByTexture)
@@ -274,8 +261,7 @@ public class DeformableSolidBehaviour : MonoBehaviour
     }
     public void OnDrawGizmos()
     {
-        //if (m_Ready)
-        //{
+
         foreach (var n in m_Nodes)
         {
             Gizmos.color = Color.green;
@@ -286,29 +272,6 @@ public class DeformableSolidBehaviour : MonoBehaviour
             Gizmos.color = Color.green;
             Gizmos.DrawLine(s.m_NodeA.m_Pos, s.m_NodeB.m_Pos);
         }
-        int i = 0;
-        //foreach (var v in m_Mesh.vertices)
-        //{
-        //    Gizmos.color = Color.red;
-        //    //Gizmos.DrawIcon(v, i.ToString());
-        //    Handles.Label(v+new Vector3(0,i*0.1f,0), i.ToString());
-        //    i++;
-        //}
-        Vector3 normal1 = Vector3.Cross(m_Tetras[0].m_B.m_Pos - m_Tetras[0].m_A.m_Pos, m_Tetras[0].m_C.m_Pos - m_Tetras[0].m_A.m_Pos);
-        Vector3 normal2 = Vector3.Cross( m_Tetras[0].m_C.m_Pos -  m_Tetras[0].m_A.m_Pos,  m_Tetras[0].m_D.m_Pos -  m_Tetras[0].m_A.m_Pos);
-        Vector3 normal3 = Vector3.Cross(   m_Tetras[0].m_D.m_Pos -  m_Tetras[0].m_A.m_Pos, m_Tetras[0].m_B.m_Pos - m_Tetras[0].m_A.m_Pos);
-        Vector3 normal4 = Vector3.Cross(m_Tetras[0].m_D.m_Pos - m_Tetras[0].m_B.m_Pos, m_Tetras[0].m_C.m_Pos - m_Tetras[0].m_B.m_Pos);
-
-        Gizmos.color = Color.red;
-        Gizmos.DrawLine(m_Tetras[0].m_A.m_Pos, m_Tetras[0].m_A.m_Pos - normal1 );
-        Gizmos.DrawLine(m_Tetras[0].m_A.m_Pos, m_Tetras[0].m_A.m_Pos - normal2 );
-        Gizmos.DrawLine(m_Tetras[0].m_A.m_Pos, m_Tetras[0].m_A.m_Pos - normal3 );
-        Gizmos.DrawLine(m_Tetras[0].m_D.m_Pos, m_Tetras[0].m_D.m_Pos - normal4 );
-
-
-
-
-        //}
 
     }
     //private void OnDrawGizmosSelected()
@@ -335,7 +298,6 @@ public class DeformableSolidBehaviour : MonoBehaviour
         if (Input.GetKeyUp(KeyCode.P))
             this.m_Paused = !this.m_Paused;
 
-        m_NodeMass = m_MeshMass / m_NodesCount;
 
         m_SubTimeStep = m_TimeStep / m_Substeps;
 
@@ -361,15 +323,12 @@ public class DeformableSolidBehaviour : MonoBehaviour
         for (int i = 0; i < m_VertexCount; i++)
         {
 
-
             Vector3 newPos = m_VerticesInfo[i].w_A * m_Tetras[m_VerticesInfo[i].tetra_id].m_A.m_Pos +
                 m_VerticesInfo[i].w_B * m_Tetras[m_VerticesInfo[i].tetra_id].m_B.m_Pos +
                 m_VerticesInfo[i].w_C * m_Tetras[m_VerticesInfo[i].tetra_id].m_C.m_Pos +
                 m_VerticesInfo[i].w_D * m_Tetras[m_VerticesInfo[i].tetra_id].m_D.m_Pos;
 
-            //print("antes"+newPos);
             newPos = transform.InverseTransformPoint(newPos);
-            //print(newPos);
 
             m_Vertices[i] = newPos;
 
@@ -377,7 +336,6 @@ public class DeformableSolidBehaviour : MonoBehaviour
         m_Mesh.vertices = m_Vertices;
 
         m_Mesh.RecalculateNormals();
-        m_Mesh.RecalculateTangents();
 
 
     }
@@ -456,7 +414,7 @@ public class DeformableSolidBehaviour : MonoBehaviour
                     }
                 }
                 n.m_Pos += m_SubTimeStep * n.m_Vel;
-                n.m_Vel += m_SubTimeStep / m_NodeMass * n.m_Force;
+                n.m_Vel += m_SubTimeStep / n.m_NodeMass * n.m_Force;
             }
         }
 
@@ -483,7 +441,7 @@ public class DeformableSolidBehaviour : MonoBehaviour
         {
             if (!n.m_Fixed)
             {
-                Vector3 resVel = n.m_Vel + m_SubTimeStep / m_NodeMass * n.m_Force;
+                Vector3 resVel = n.m_Vel + m_SubTimeStep / n.m_NodeMass * n.m_Force;
                 if (m_CanCollide)
                 {
                     foreach (var obj in m_CollidingMeshes)
@@ -493,7 +451,7 @@ public class DeformableSolidBehaviour : MonoBehaviour
                         {
                             n.ComputeExplicitPenaltyForce(n.ComputeCollision(obj, condition), m_PenaltyStiffness);
                             n.m_Force += n.m_PenaltyForce;
-                            resVel = n.m_Vel + m_SubTimeStep / m_NodeMass * n.m_Force;
+                            resVel = n.m_Vel + m_SubTimeStep / n.m_NodeMass * n.m_Force;
                         }
                     }
                 }
@@ -535,7 +493,7 @@ public class DeformableSolidBehaviour : MonoBehaviour
         {
             if (!n.m_Fixed)
             {
-                Vector3 resVel = n.m_Vel + (m_SubTimeStep * 0.5f) / m_NodeMass * n.m_Force;
+                Vector3 resVel = n.m_Vel + (m_SubTimeStep * 0.5f) / n.m_NodeMass * n.m_Force;
                 if (m_CanCollide)
                 {
                     foreach (var obj in m_CollidingMeshes)
@@ -545,7 +503,7 @@ public class DeformableSolidBehaviour : MonoBehaviour
                         {
                             n.ComputeExplicitPenaltyForce(n.ComputeCollision(obj, condition), m_PenaltyStiffness);
                             n.m_Force += n.m_PenaltyForce;
-                            resVel = n.m_Vel + (m_SubTimeStep * 0.5f) / m_NodeMass * n.m_Force;
+                            resVel = n.m_Vel + (m_SubTimeStep * 0.5f) / n.m_NodeMass * n.m_Force;
                         }
                     }
                 }
@@ -572,7 +530,7 @@ public class DeformableSolidBehaviour : MonoBehaviour
 
             if (!m_Nodes[i].m_Fixed)
             {
-                Vector3 resVel = m_Vel0[i] + m_SubTimeStep / m_NodeMass * m_Nodes[i].m_Force;
+                Vector3 resVel = m_Vel0[i] + m_SubTimeStep / m_Nodes[i].m_NodeMass * m_Nodes[i].m_Force;
                 if (m_CanCollide)
                 {
                     foreach (var obj in m_CollidingMeshes)
@@ -582,7 +540,7 @@ public class DeformableSolidBehaviour : MonoBehaviour
                         {
                             m_Nodes[i].ComputeExplicitPenaltyForce(m_Nodes[i].ComputeCollision(obj, condition), m_PenaltyStiffness);
                             m_Nodes[i].m_Force += m_Nodes[i].m_PenaltyForce;
-                            resVel = m_Vel0[i] + m_SubTimeStep / m_NodeMass * m_Nodes[i].m_Force;
+                            resVel = m_Vel0[i] + m_SubTimeStep / m_Nodes[i].m_NodeMass * m_Nodes[i].m_Force;
                         }
                     }
                 }
@@ -615,7 +573,7 @@ public class DeformableSolidBehaviour : MonoBehaviour
         {
             if (!n.m_Fixed)
             {
-                resVel = n.m_Vel + m_SubTimeStep / m_NodeMass * n.m_Force;
+                resVel = n.m_Vel + m_SubTimeStep / n.m_NodeMass * n.m_Force;
                 if (m_CanCollide)
                 {
                     foreach (var obj in m_CollidingMeshes)
@@ -628,12 +586,12 @@ public class DeformableSolidBehaviour : MonoBehaviour
                             MatrixXD i = new DenseMatrixXD(3);
                             i = DenseMatrixXD.CreateIdentity(3);
 
-                            Vector3 b = n.m_Vel + m_SubTimeStep / m_NodeMass * (n.m_PenaltyForce + n.m_Force); //Spring and wind force already computed in n.m_Force
+                            Vector3 b = n.m_Vel + m_SubTimeStep / n.m_NodeMass * (n.m_PenaltyForce + n.m_Force); //Spring and wind force already computed in n.m_Force
 
                             VectorXD bProxy = new DenseVectorXD(3);
                             bProxy[0] = b.x; bProxy[1] = b.y; bProxy[2] = b.z;
 
-                            var x = (i - (m_SubTimeStep * m_SubTimeStep / m_NodeMass) * diff).Solve(bProxy);
+                            var x = (i - (m_SubTimeStep * m_SubTimeStep / n.m_NodeMass) * diff).Solve(bProxy);
 
                             resVel = new Vector3((float)x[0], (float)x[1], (float)x[2]);
 
@@ -661,16 +619,12 @@ public class DeformableSolidBehaviour : MonoBehaviour
         for (int i = 0; i < m_VertexCount; i++)
         {
             Vector3 globalPos = transform.TransformPoint(m_Mesh.vertices[i]);
-            //print(globalPos);
-
             foreach (var tetra in m_Tetras)
             {
                 if (tetra.PointInside(globalPos))
                 {
                     tetra.ComputeVertexWeights(globalPos, out float wA, out float wB, out float wC, out float wD);
-                    print(i + " = " + wA+" "+wB+" "+wC+" "+wD);
                     m_VerticesInfo.Add(new VertexInfo(i, tetra.id, wA, wB, wC, wD));
-                    print("SI, ESTA DENTRO" + i);
                     break;
                 }
 

@@ -25,12 +25,6 @@ public class Parser : MonoBehaviour
 
     void Awake()
     {
-
-        // Ayuda TextAsset: https://docs.unity3d.com/ScriptReference/TextAsset.html
-        // Ayuda Unity de String https://docs.unity3d.com/ScriptReference/String.html
-        // Ayuda MSDN de String https://docs.microsoft.com/en-us/dotnet/api/system.string?redirectedfrom=MSDN&view=netframework-4.8
-        // Ayuda MSDN de String.Split https://docs.microsoft.com/en-us/dotnet/api/system.string.split?view=netframework-4.8
-
         m_NodesRaw = m_NodeFile.text.Split(new string[] { " ", "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries);
 
         m_TetrasRaw = m_TetraFile.text.Split(new string[] { " ", "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries);
@@ -111,7 +105,7 @@ public class Parser : MonoBehaviour
                 nodesList[int.Parse(m_TetrasRaw[idx]) - 1],
                 nodesList[int.Parse(m_TetrasRaw[idx + 1]) - 1],
                 nodesList[int.Parse(m_TetrasRaw[idx + 2]) - 1],
-                nodesList[int.Parse(m_TetrasRaw[idx + 3]) - 1]));
+                nodesList[int.Parse(m_TetrasRaw[idx + 3]) - 1],manager.m_MeshDensity));
 
             idx += 5;
         }

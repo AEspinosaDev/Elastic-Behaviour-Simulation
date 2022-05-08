@@ -475,14 +475,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4814f04aff2cb5c40a99543b274ee3b8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_NodeMass: 0
   m_Ready: 1
-  m_SolvingMethod: 1
+  m_SolvingMethod: 2
   m_TimeStep: 0.004
   m_Substeps: 5
   m_Paused: 1
   m_Gravity: {x: 0, y: -9.81, z: 0}
-  m_MeshMass: 3.63
+  m_MeshDensity: 3
   m_NodeDamping: 2
   m_SpringDamping: 2
   m_TractionStiffness: 100

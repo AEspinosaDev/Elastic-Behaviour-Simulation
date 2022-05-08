@@ -16,7 +16,7 @@ public class Node
     public Vector3 m_Vel;
     public Vector3 m_Force;
     public float m_ForceFactor;
-
+    public float m_NodeMass;
 
     public Vector3 m_offset;            //Only if fixed enabled
 
@@ -35,7 +35,6 @@ public class Node
         m_Id = iD;
         m_Pos = pos;
         m_Vel = Vector3.zero;
-        //m_UV = uv;
         m_ForceFactor = 1f;
         m_Fixer = null;
 
@@ -51,7 +50,7 @@ public class Node
     public void ComputeForces()
     {
 
-        m_Force += m_Manager.m_NodeMass * m_Manager.m_Gravity - m_Manager.m_NodeDamping * m_Manager.m_NodeMass * m_Vel;
+        m_Force += m_NodeMass * m_Manager.m_Gravity - m_Manager.m_NodeDamping * m_NodeMass * m_Vel;
 
         m_Force += m_WindForce;
 
@@ -208,15 +207,18 @@ public class Node
     }
 }
 
+/// <summary>
+///Struct that contains vertex weights to its containing tetrahedron along its Id.
+/// </summary>
 public struct VertexInfo
 {
-    public int id;
-    public int tetra_id;
+    public readonly int id;
+    public readonly int tetra_id;
 
-    public float w_A;
-    public float w_B;
-    public float w_C;
-    public float w_D;
+    public readonly float w_A;
+    public readonly float w_B;
+    public readonly float w_C;
+    public readonly float w_D;
 
 
     public VertexInfo(int id, int tetra_id, float weight1, float weight2, float weight3, float weight4)
