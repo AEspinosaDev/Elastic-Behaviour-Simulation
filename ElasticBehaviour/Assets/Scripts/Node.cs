@@ -26,10 +26,10 @@ public class Node
     public Vector3 m_PenaltyForce;      //Only if collisions enabled
 
     public Vector2 m_UV;
-    public DeformableSolidBehaviour m_Manager;
+    public ElasticBehaviour m_Manager;
 
 
-    public Node(int iD, Vector3 pos, DeformableSolidBehaviour manager)
+    public Node(int iD, Vector3 pos, ElasticBehaviour manager)
     {
         m_Fixed = false;
         m_Id = iD;

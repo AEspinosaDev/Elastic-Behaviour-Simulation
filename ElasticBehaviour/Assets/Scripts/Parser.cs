@@ -10,8 +10,6 @@ using UnityEngine;
 public class Parser : MonoBehaviour
 {
 
-
-
     private string[] m_NodesRaw;
     private string[] m_TetrasRaw;
 
@@ -78,7 +76,7 @@ public class Parser : MonoBehaviour
     /// <param name="nodesList"></param>
     /// <param name="tetrasList"></param>
     /// <param name="manager"></param>
-    public void CompleteParse(List<Node> nodesList, List<Tetrahedron> tetrasList, DeformableSolidBehaviour manager)
+    public void CompleteParse(List<Node> nodesList, List<Tetrahedron> tetrasList, ElasticBehaviour manager)
     {
         CultureInfo tetgenCulture = new CultureInfo("en-US");
         CultureInfo localCulture = System.Globalization.CultureInfo.CurrentCulture;

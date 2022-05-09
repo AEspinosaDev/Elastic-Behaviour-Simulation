@@ -13,9 +13,11 @@ public class Spring
     public float m_Length;
     public float m_Volume;
 
-    DeformableSolidBehaviour m_Manager;
+    public List<Tetrahedron> m_AffectingTetras;
 
-    public Spring(Node nodeA, Node nodeB, DeformableSolidBehaviour manager, List<Tetrahedron> tetras)
+    ElasticBehaviour m_Manager;
+
+    public Spring(Node nodeA, Node nodeB, ElasticBehaviour manager, List<Tetrahedron> tetras)
     {
         m_NodeA = nodeA;
         m_NodeB = nodeB;
@@ -23,12 +25,12 @@ public class Spring
         m_Length = m_Length0;
         m_Manager = manager;
         m_Volume = 0.0f;
+        m_AffectingTetras = tetras;
 
         foreach (var tetra in tetras)
         {
             m_Volume += tetra.m_Volume / 6;
         }
-        Debug.Log(m_Volume);
     }
 
     /// <summary>
@@ -36,15 +38,19 @@ public class Spring
     /// </summary>
     public void ComputeForces()
     {
-
+        m_Volume = 0.0f;
+        foreach (var tetra in m_AffectingTetras)
+        {
+            m_Volume += tetra.m_Volume / 6;
+        }
 
         Vector3 u = m_NodeA.m_Pos - m_NodeB.m_Pos;
         m_Length = u.magnitude;
         u.Normalize();
 
         float dampForce = -m_Manager.m_SpringDamping * Vector3.Dot(u, (m_NodeA.m_Vel - m_NodeB.m_Vel));
-        float stress = -m_Manager.m_TractionStiffness * (m_Length - m_Length0) + dampForce;
-        //float stress = -(m_Volume/(m_Length0*m_Length0))*m_Manager.m_TractionStiffness * (m_Length - m_Length0) + dampForce;
+        //float stress = -m_Manager.m_TractionStiffness * (m_Length - m_Length0) + dampForce;
+        float stress = -(m_Volume / (m_Length0 * m_Length0)) * m_Manager.m_Stiffness * (m_Length - m_Length0) + dampForce;
         Vector3 force = stress * u;
         m_NodeA.m_Force += force;
         m_NodeB.m_Force -= force;
@@ -128,7 +134,7 @@ public class Tetrahedron
         ComputeNodesMass(meshDensity);
 
     }
-    private float ComputeVolume()
+    public float ComputeVolume()
     {
 
         Vector3 crossProduct = Vector3.Cross(m_A.m_Pos - m_D.m_Pos, m_B.m_Pos - m_D.m_Pos);
@@ -189,4 +195,3 @@ public class Tetrahedron
     }
 
 }
-

@@ -481,11 +481,10 @@ MonoBehaviour:
   m_Substeps: 5
   m_Paused: 1
   m_Gravity: {x: 0, y: -9.81, z: 0}
-  m_MeshDensity: 3
-  m_NodeDamping: 2
-  m_SpringDamping: 2
-  m_TractionStiffness: 100
-  m_FlexionStiffness: 15
+  m_MeshDensity: 0.05
+  m_NodeDamping: 0.3
+  m_SpringDamping: 0.3
+  m_Stiffness: 100
   m_AffectedByWind: 0
   m_FixingByTexture: 0
   m_CanCollide: 0
