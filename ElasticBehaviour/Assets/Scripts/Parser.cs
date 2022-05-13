@@ -76,7 +76,7 @@ public class Parser : MonoBehaviour
     /// <param name="nodesList"></param>
     /// <param name="tetrasList"></param>
     /// <param name="manager"></param>
-    public void CompleteParse(List<Node> nodesList, List<Tetrahedron> tetrasList, ElasticBehaviour manager)
+    public void CompleteParse(List<Node> nodesList, List<Tetrahedron> tetrasList,List<Vector3Int> trianglesList, ElasticBehaviour manager)
     {
         CultureInfo tetgenCulture = new CultureInfo("en-US");
         CultureInfo localCulture = System.Globalization.CultureInfo.CurrentCulture;
@@ -99,14 +99,26 @@ public class Parser : MonoBehaviour
         idx = 4;
         for (int i = 0; i < numTetras; i++)
         {
+            int idx0 = int.Parse(m_TetrasRaw[idx]) - 1;
+            int idx1 = int.Parse(m_TetrasRaw[idx+1]) - 1;
+            int idx2 = int.Parse(m_TetrasRaw[idx+2]) - 1;
+            int idx3 = int.Parse(m_TetrasRaw[idx+3]) - 1;
+            
+
             tetrasList.Add(new Tetrahedron(i,
-                nodesList[int.Parse(m_TetrasRaw[idx]) - 1],
-                nodesList[int.Parse(m_TetrasRaw[idx + 1]) - 1],
-                nodesList[int.Parse(m_TetrasRaw[idx + 2]) - 1],
-                nodesList[int.Parse(m_TetrasRaw[idx + 3]) - 1],manager.m_MeshDensity));
+                nodesList[idx0],
+                nodesList[idx1],
+                nodesList[idx2],
+                nodesList[idx3],manager.m_MeshDensity));
+
+            trianglesList.Add(new Vector3Int(idx0,idx1,idx2));
+            trianglesList.Add(new Vector3Int(idx0,idx2,idx3));
+            trianglesList.Add(new Vector3Int(idx0,idx3,idx1));
+            trianglesList.Add(new Vector3Int(idx1,idx3,idx2));
 
             idx += 5;
         }
+
         System.Globalization.CultureInfo.CurrentCulture = localCulture;
 
     }

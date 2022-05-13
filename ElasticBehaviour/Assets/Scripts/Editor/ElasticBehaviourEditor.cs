@@ -34,19 +34,6 @@ public class ElasticBehaviourEditor : Editor
             b.m_WindSolverPrecission = (WindPrecission)EditorGUILayout.EnumPopup(new GUIContent("Wind Solver Precission", "Controls how many iterations is the wind force computed. Higher values means more computational load."), b.m_WindSolverPrecission);
         }
 
-        b.m_FixingByTexture = EditorGUILayout.Toggle(new GUIContent("Fixing By Gradient", "Choose between fixing the mesh to other game objects or using a grayscale texture to fix the nodes to the whiter values. The darker the value the less the node will be affected by the cloth behaviour."), b.m_FixingByTexture);
-
-        if (b.m_FixingByTexture)
-
-        {
-            EditorGUILayout.HelpBox("In order to use the texture, enable read/write on its import settings and set the alpha source to grayscale.", MessageType.Info);
-            b.m_Texture = (Texture2D)EditorGUILayout.ObjectField("Texture", b.m_Texture, typeof(Texture2D), false);
-
-        }
-        else
-        {
-            EditorGUILayout.PropertyField(fixersList);
-        }
 
         b.m_CanCollide = EditorGUILayout.Toggle("Can Collide", b.m_CanCollide);
 

@@ -98,7 +98,7 @@ public class EdgeQualityComparer : IEqualityComparer<Edge>
     public bool Equals(Edge a, Edge b)
     {
         if (a.m_A == b.m_A && a.m_B == b.m_B || a.m_A == b.m_B && a.m_B == b.m_A) return true;
-        else return false;
+        return false;
     }
 
     public int GetHashCode(Edge e)
@@ -107,10 +107,29 @@ public class EdgeQualityComparer : IEqualityComparer<Edge>
         pts.Sort();
         //CANTOR PAIRING FUNCTION
         int hcode = ((pts[0] + pts[1]) * (pts[0] + pts[1] + 1)) / 2 + pts[1];
-
         return hcode.GetHashCode();
     }
 }
+/// <summary>
+///  Custom comparer class designed to compare repeated triangles
+/// </summary>
+public class TriangleQualityComparer : IEqualityComparer<Vector3Int>
+{
+    public bool Equals(Vector3Int x, Vector3Int y)
+    {
+        if (GetHashCode(x) == GetHashCode(y)) return true;
+        return false;
+    }
+
+    public int GetHashCode(Vector3Int obj)
+    {
+        List<int> pts = new List<int>(); pts.Add(obj.x); pts.Add(obj.y); pts.Add(obj.z);
+        pts.Sort();
+        Vector3Int objSorted = new Vector3Int(pts[0], pts[1], pts[2]);
+        return objSorted.GetHashCode();
+    }
+}
+
 /// <summary>
 /// Class that represents the Tetahedron, the poligons which the proxy mesh is made of.
 /// </summary>
@@ -181,16 +200,16 @@ public class Tetrahedron
 
     public bool PointInside(Vector3 p)
     {
-        Vector3 normal2 = Vector3.Cross(m_C.m_Pos - m_A.m_Pos, m_D.m_Pos - m_A.m_Pos);
         Vector3 normal1 = Vector3.Cross(m_B.m_Pos - m_A.m_Pos, m_C.m_Pos - m_A.m_Pos);
+        Vector3 normal2 = Vector3.Cross(m_C.m_Pos - m_A.m_Pos, m_D.m_Pos - m_A.m_Pos);
         Vector3 normal3 = Vector3.Cross(m_D.m_Pos - m_A.m_Pos, m_B.m_Pos - m_A.m_Pos);
         Vector3 normal4 = Vector3.Cross(m_D.m_Pos - m_B.m_Pos, m_C.m_Pos - m_B.m_Pos);
 
 
-        return normal1.x * (m_A.m_Pos.x - p.x) + normal1.y * (m_A.m_Pos.y - p.y) + normal1.z * (m_A.m_Pos.z - p.z) <= 0.0001 &&
-            normal2.x * (m_A.m_Pos.x - p.x) + normal2.y * (m_A.m_Pos.y - p.y) + normal2.z * (m_A.m_Pos.z - p.z) <= 0.0001 &&
-            normal3.x * (m_A.m_Pos.x - p.x) + normal3.y * (m_A.m_Pos.y - p.y) + normal3.z * (m_A.m_Pos.z - p.z) <= 0.0001 &&
-            normal4.x * (m_D.m_Pos.x - p.x) + normal4.y * (m_D.m_Pos.y - p.y) + normal4.z * (m_D.m_Pos.z - p.z) <= 0.0001;
+        return normal1.x * (m_A.m_Pos.x - p.x) + normal1.y * (m_A.m_Pos.y - p.y) + normal1.z * (m_A.m_Pos.z - p.z) <= 0.1 &&
+            normal2.x * (m_A.m_Pos.x - p.x) + normal2.y * (m_A.m_Pos.y - p.y) + normal2.z * (m_A.m_Pos.z - p.z) <= 0.1 &&
+            normal3.x * (m_A.m_Pos.x - p.x) + normal3.y * (m_A.m_Pos.y - p.y) + normal3.z * (m_A.m_Pos.z - p.z) <= 0.1 &&
+            normal4.x * (m_D.m_Pos.x - p.x) + normal4.y * (m_D.m_Pos.y - p.y) + normal4.z * (m_D.m_Pos.z - p.z) <= 0.1;
 
     }
 

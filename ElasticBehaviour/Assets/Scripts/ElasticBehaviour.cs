@@ -26,7 +26,6 @@ public class ElasticBehaviour : MonoBehaviour
 
     [HideInInspector] List<Tetrahedron> m_Tetras;
 
-    [HideInInspector] private int m_NodesCount;
     [HideInInspector] private int m_TetrasCount;
     [HideInInspector] private int m_VertexCount;
 
@@ -35,6 +34,8 @@ public class ElasticBehaviour : MonoBehaviour
     [HideInInspector] private Vector3[] m_Vertices;
 
     [HideInInspector] private List<Node> m_Nodes;
+
+    [HideInInspector] private List<Vector3Int> m_SurfaceTriangles;
 
     [HideInInspector] private List<Spring> m_Springs;
 
@@ -80,11 +81,11 @@ public class ElasticBehaviour : MonoBehaviour
     [Tooltip("Controls the stiffness of the springs. The more stiff, the less the mesh will deform and the quicker it will return to its initial state.")]
     [SerializeField] public float m_Stiffness;
 
+    [SerializeField] public List<GameObject> m_Fixers;
+
     //------Managed by custom editor class-----//
 
     [HideInInspector] public bool m_AffectedByWind;
-
-    [HideInInspector] public bool m_FixingByTexture;
 
     [HideInInspector] public bool m_CanCollide;
     #endregion
@@ -96,7 +97,6 @@ public class ElasticBehaviour : MonoBehaviour
     [HideInInspector] public WindPrecission m_WindSolverPrecission;
 
     [HideInInspector] public Texture2D m_Texture;
-    public List<GameObject> m_Fixers;
 
     [HideInInspector] public List<GameObject> m_CollidingMeshes;
 
@@ -106,8 +106,6 @@ public class ElasticBehaviour : MonoBehaviour
 
     public ElasticBehaviour()
     {
-
-        m_FixingByTexture = false;
 
         m_TimeStep = 0.004f;
         m_Substeps = 5;
@@ -153,7 +151,7 @@ public class ElasticBehaviour : MonoBehaviour
         Low = 3,
     }
 
-   
+
 
     #region MonoBehaviour
 
@@ -165,10 +163,11 @@ public class ElasticBehaviour : MonoBehaviour
         m_Nodes = new List<Node>();
         m_Tetras = new List<Tetrahedron>();
         m_VerticesInfo = new List<VertexInfo>();
+        m_SurfaceTriangles = new List<Vector3Int>();
+        List<Vector3Int> triangleList = new List<Vector3Int>();
 
-        m_Parser.CompleteParse(m_Nodes, m_Tetras, this);
+        m_Parser.CompleteParse(m_Nodes, m_Tetras, triangleList, this);
 
-        m_NodesCount = m_Nodes.Count;
         m_TetrasCount = m_Tetras.Count;
 
 
@@ -179,52 +178,17 @@ public class ElasticBehaviour : MonoBehaviour
 
         CheckContainingTetraPerVertex();
 
-        m_Springs = new List<Spring>();
+        GenerateSprings();
 
-        EdgeQualityComparer edgeComparer = new EdgeQualityComparer();
-
-        Dictionary<Edge, Edge> edgeDictionary = new Dictionary<Edge, Edge>(edgeComparer);
-
-        Edge repeatedEdge;
-        for (int i = 0; i < m_TetrasCount; i++)
-        {
-            List<Edge> edges = new List<Edge>();
-            edges.Add(new Edge(m_Tetras[i].m_A.m_Id, m_Tetras[i].m_B.m_Id, m_Tetras[i]));
-            edges.Add(new Edge(m_Tetras[i].m_B.m_Id, m_Tetras[i].m_C.m_Id, m_Tetras[i]));
-            edges.Add(new Edge(m_Tetras[i].m_C.m_Id, m_Tetras[i].m_A.m_Id, m_Tetras[i]));
-            edges.Add(new Edge(m_Tetras[i].m_D.m_Id, m_Tetras[i].m_A.m_Id, m_Tetras[i]));
-            edges.Add(new Edge(m_Tetras[i].m_D.m_Id, m_Tetras[i].m_B.m_Id, m_Tetras[i]));
-            edges.Add(new Edge(m_Tetras[i].m_D.m_Id, m_Tetras[i].m_C.m_Id, m_Tetras[i]));
-
-            foreach (var edge in edges)
-            {
-                if (!edgeDictionary.TryGetValue(edge, out repeatedEdge))
-                {
-                    edgeDictionary.Add(edge, edge);
-                }
-                else
-                {
-                    repeatedEdge.m_Tetras.Add(m_Tetras[i]);
-                }
-
-
-            }
-        }
-        foreach (var edge in edgeDictionary)
-        {
-            m_Springs.Add(new Spring(m_Nodes[edge.Value.m_A], m_Nodes[edge.Value.m_B], this, edge.Value.m_Tetras));
-        }
+        FindSurfaceTriangles(triangleList);
 
         m_SubTimeStep = m_TimeStep / m_Substeps;
 
         //Attach to fixers
-        if (!m_FixingByTexture)
-            CheckFixers();
-        else
-            CheckTextureWeights();
+        CheckFixers();
 
         //Look for Wind objs
-        //CheckWindObjects();
+        CheckWindObjects();
     }
     public void OnDrawGizmos()
     {
@@ -239,26 +203,25 @@ public class ElasticBehaviour : MonoBehaviour
             Gizmos.color = Color.green;
             Gizmos.DrawLine(s.m_NodeA.m_Pos, s.m_NodeB.m_Pos);
         }
+        for (int i = 0; i < m_SurfaceTriangles.Count; i++)
+        {
 
+            Node nodeA = m_Nodes[m_SurfaceTriangles[i].x];
+            Node nodeB = m_Nodes[m_SurfaceTriangles[i].y];
+            Node nodeC = m_Nodes[m_SurfaceTriangles[i].z];
+
+            Gizmos.color = Color.red;
+            Gizmos.DrawSphere(nodeA.m_Pos, 0.2f);
+            Gizmos.DrawSphere(nodeB.m_Pos, 0.2f);
+            Gizmos.DrawSphere(nodeC.m_Pos, 0.2f);
+
+            Vector3 crossProduct = -Vector3.Cross(nodeB.m_Pos - nodeA.m_Pos, nodeC.m_Pos - nodeA.m_Pos).normalized;
+            Gizmos.DrawLine(nodeA.m_Pos, nodeA.m_Pos + crossProduct);
+            Gizmos.DrawLine(nodeB.m_Pos, nodeB.m_Pos + crossProduct);
+            Gizmos.DrawLine(nodeC.m_Pos, nodeC.m_Pos + crossProduct);
+        }
     }
-    //private void OnDrawGizmosSelected()
-    //{
-
-    //    foreach (var n in m_Nodes)
-    //    {
-    //        Gizmos.color = Color.green;
-    //        //Gizmos.DrawSphere(transform.TransformPoint(n.m_Pos), 0.2f);
-    //        Gizmos.DrawSphere(n.m_Pos, 0.2f);
-    //    }
-    //    foreach (var s in m_Springs)
-    //    {
-    //        Gizmos.color = Color.green;
-    //        //Gizmos.DrawLine(transform.TransformPoint(s.m_NodeA.m_Pos), transform.TransformPoint(s.m_NodeB.m_Pos));
-    //        Gizmos.DrawLine(s.m_NodeA.m_Pos, s.m_NodeB.m_Pos);
-    //    }
-
-
-    //}
+    
 
     public void Update()
     {
@@ -277,15 +240,9 @@ public class ElasticBehaviour : MonoBehaviour
 
         foreach (var node in m_FixedNodes)
         {
-            if (m_FixingByTexture)
-            {
-                node.m_Pos = transform.TransformPoint(node.m_offset);
-            }
-            else
-            {
-                node.m_Pos = node.m_Fixer.transform.TransformPoint(node.m_offset);
 
-            }
+            node.m_Pos = node.m_Fixer.transform.TransformPoint(node.m_offset);
+
         }
 
         for (int i = 0; i < m_VertexCount; i++)
@@ -586,7 +543,7 @@ public class ElasticBehaviour : MonoBehaviour
 
     #endregion
     /// <summary>
-    /// Iterates through all mesh vertices and checks what is the tetrahedron in which each vertex is contained, assigning the weights necesary to compute the position
+    /// Called on start. Iterates through all mesh vertices and checks what is the tetrahedron in which each vertex is contained, assigning the weights necesary to compute the position
     /// in the physic solving.
     /// </summary>
     private void CheckContainingTetraPerVertex()
@@ -608,6 +565,80 @@ public class ElasticBehaviour : MonoBehaviour
 
         }
 
+    }
+    /// <summary>
+    /// Called on start. Creates all springs needed for the proxy mesh, having first taken care of all repeated ones.
+    /// </summary>
+    private void GenerateSprings()
+    {
+        m_Springs = new List<Spring>();
+
+        EdgeQualityComparer edgeComparer = new EdgeQualityComparer();
+
+        Dictionary<Edge, Edge> edgeDictionary = new Dictionary<Edge, Edge>(edgeComparer);
+
+        Edge repeatedEdge;
+        for (int i = 0; i < m_TetrasCount; i++)
+        {
+            List<Edge> edges = new List<Edge>();
+            edges.Add(new Edge(m_Tetras[i].m_A.m_Id, m_Tetras[i].m_B.m_Id, m_Tetras[i]));
+            edges.Add(new Edge(m_Tetras[i].m_B.m_Id, m_Tetras[i].m_C.m_Id, m_Tetras[i]));
+            edges.Add(new Edge(m_Tetras[i].m_C.m_Id, m_Tetras[i].m_A.m_Id, m_Tetras[i]));
+            edges.Add(new Edge(m_Tetras[i].m_D.m_Id, m_Tetras[i].m_A.m_Id, m_Tetras[i]));
+            edges.Add(new Edge(m_Tetras[i].m_D.m_Id, m_Tetras[i].m_B.m_Id, m_Tetras[i]));
+            edges.Add(new Edge(m_Tetras[i].m_D.m_Id, m_Tetras[i].m_C.m_Id, m_Tetras[i]));
+
+            foreach (var edge in edges)
+            {
+                if (!edgeDictionary.TryGetValue(edge, out repeatedEdge))
+                {
+                    edgeDictionary.Add(edge, edge);
+                }
+                else
+                {
+                    repeatedEdge.m_Tetras.Add(m_Tetras[i]);
+                }
+
+
+            }
+        }
+        foreach (var edge in edgeDictionary)
+        {
+            m_Springs.Add(new Spring(m_Nodes[edge.Value.m_A], m_Nodes[edge.Value.m_B], this, edge.Value.m_Tetras));
+        }
+
+    }
+    /// <summary>
+    /// Called on start. Iterates through the initial triangle list to find the ones that are in the surface of the proxy mesh, and stores them in a dedicated data structure
+    /// in order to use it for computing the wind forces.
+    /// </summary>
+    /// <param name="triangleList">The total triangle list generated from the parser. Each triangle is represented by a vector3int, which components store the index of the each node the triangle is formed of.</param>
+    private void FindSurfaceTriangles(List<Vector3Int> triangleList)
+    {
+        
+        TriangleQualityComparer trisComparer = new TriangleQualityComparer();
+
+        Dictionary<Vector3Int, Vector3Int> trisDictionary = new Dictionary<Vector3Int, Vector3Int>(trisComparer);
+
+        Vector3Int repeatedTris;
+        for (int i = 0; i < triangleList.Count; i++)
+        {
+            Vector3Int tris = triangleList[i];
+            if (!trisDictionary.TryGetValue(tris, out repeatedTris))
+            {
+                trisDictionary.Add(tris, tris);
+            }
+            else
+            {
+                trisDictionary.Remove(tris);
+            }
+
+        }
+        foreach (var tris in trisDictionary)
+        {
+            m_SurfaceTriangles.Add(tris.Value);
+        }
+        //print(m_SurfaceTriangles.Count);
     }
     /// <summary>
     /// Checks whether the vertex is inside the fixer colliders in order to put it in a fixed state.
@@ -633,37 +664,7 @@ public class ElasticBehaviour : MonoBehaviour
             }
         }
     }
-    /// <summary>
-    /// Check whether the vertex color value is inside the fixing color condition in order to put it in a fixed state.
-    /// </summary>
-    private void CheckTextureWeights()
-    {
-        if (m_Texture != null)
-        {
-            int textWidth = m_Texture.width;
 
-            foreach (var node in m_Nodes)
-            {
-                float xCoord = textWidth * node.m_UV.x;
-                float yCoord = textWidth * node.m_UV.y;
-
-                Color color = m_Texture.GetPixel((int)xCoord, (int)yCoord);
-
-                float factor = 0.9f;
-                if (color.a >= factor)
-                {
-                    node.m_Fixed = true;
-                    m_FixedNodes.Add(node);
-                    node.m_offset = transform.InverseTransformPoint(node.m_Pos);
-                }
-                else
-                {
-                    node.m_ForceFactor = 1 - color.a;
-                }
-            }
-        }
-
-    }
     /// <summary>
     /// Automatically called on start. Checks for wind objects in order to take them into account to make the wind simulation.
     /// </summary>
@@ -701,27 +702,27 @@ public class ElasticBehaviour : MonoBehaviour
     /// </summary>
     private void ComputeWindForces()
     {
-        //    for (int i = 0; i < m_ProxyMesh.triangles.Length; i += 3)
-        //    {
+        for (int i = 0; i < m_SurfaceTriangles.Count; i++)
+        {
 
-        //        Node nodeA = m_Nodes[m_ProxyTriangles[i]];
-        //        Node nodeB = m_Nodes[m_ProxyTriangles[i + 1]];
-        //        Node nodeC = m_Nodes[m_ProxyTriangles[i + 2]];
+            Node nodeA = m_Nodes[m_SurfaceTriangles[i].x];
+            Node nodeB = m_Nodes[m_SurfaceTriangles[i].y];
+            Node nodeC = m_Nodes[m_SurfaceTriangles[i].z];
 
-        //        Vector3 crossProduct = Vector3.Cross(nodeA.m_Pos - nodeB.m_Pos, nodeB.m_Pos - nodeC.m_Pos);
+            Vector3 crossProduct = -Vector3.Cross(nodeB.m_Pos - nodeA.m_Pos, nodeC.m_Pos - nodeA.m_Pos);
 
-        //        float trisArea = crossProduct.magnitude / 2;
+            float trisArea = crossProduct.magnitude / 2;
 
-        //        Vector3 trisNormal = crossProduct.normalized;
+            Vector3 trisNormal = crossProduct.normalized;
 
-        //        Vector3 trisSpeed = new Vector3((nodeA.m_Vel.x + nodeB.m_Vel.x + nodeC.m_Vel.x) / 3, (nodeA.m_Vel.y + nodeB.m_Vel.y + nodeC.m_Vel.y) / 3, (nodeA.m_Vel.z + nodeB.m_Vel.z + nodeC.m_Vel.z) / 3);
+            Vector3 trisSpeed = new Vector3((nodeA.m_Vel.x + nodeB.m_Vel.x + nodeC.m_Vel.x) / 3, (nodeA.m_Vel.y + nodeB.m_Vel.y + nodeC.m_Vel.y) / 3, (nodeA.m_Vel.z + nodeB.m_Vel.z + nodeC.m_Vel.z) / 3);
 
-        //        Vector3 trisWindForce = m_WindFriction * trisArea * Vector3.Dot(trisNormal, m_AverageWindVelocity - trisSpeed) * trisNormal;
-        //        Vector3 dispersedForce = trisWindForce / 3;
+            Vector3 trisWindForce = m_WindFriction * trisArea * Vector3.Dot(trisNormal, m_AverageWindVelocity - trisSpeed) * trisNormal;
+            Vector3 dispersedForce = trisWindForce / 3;
 
-        //        nodeA.m_WindForce = dispersedForce;
-        //        nodeB.m_WindForce = dispersedForce;
-        //        nodeC.m_WindForce = dispersedForce;
-        //    }
+            nodeA.m_WindForce = dispersedForce;
+            nodeB.m_WindForce = dispersedForce;
+            nodeC.m_WindForce = dispersedForce;
+        }
     }
 }
