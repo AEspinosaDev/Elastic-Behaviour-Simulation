@@ -13,9 +13,10 @@ Elastic simulation using a mass spring physics aproach.
 <p align="center"> 
 
 <img src="https://user-images.githubusercontent.com/79087129/168498043-9096fb50-5f8d-4df2-ae33-cf634463c158.gif">
-  
 
 <img src="https://user-images.githubusercontent.com/79087129/168498114-7270f4b1-21e9-4c93-ab3d-e04be1686684.gif">
+  
+  <img src="https://user-images.githubusercontent.com/79087129/168498326-13a4a81e-17e9-4c00-aeed-d15553693f6f.gif">
 </p>
 
 
