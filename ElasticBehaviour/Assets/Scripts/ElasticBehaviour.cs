@@ -49,6 +49,8 @@ public class ElasticBehaviour : MonoBehaviour
 
     [HideInInspector] public bool m_Ready = false;
 
+    [HideInInspector] private bool m_ProxyMeshReady = false;
+
 
     #endregion 
 
@@ -95,8 +97,6 @@ public class ElasticBehaviour : MonoBehaviour
 
     [HideInInspector] [Range(0, 1)] public float m_WindFriction;
     [HideInInspector] public WindPrecission m_WindSolverPrecission;
-
-    [HideInInspector] public Texture2D m_Texture;
 
     [HideInInspector] public List<GameObject> m_CollidingMeshes;
 
@@ -170,7 +170,6 @@ public class ElasticBehaviour : MonoBehaviour
 
         m_TetrasCount = m_Tetras.Count;
 
-
         m_Mesh = GetComponent<MeshFilter>().mesh;
 
         m_VertexCount = m_Mesh.vertexCount;
@@ -180,55 +179,65 @@ public class ElasticBehaviour : MonoBehaviour
 
         GenerateSprings();
 
+        m_ProxyMeshReady = true;
+
         FindSurfaceTriangles(triangleList);
 
         m_SubTimeStep = m_TimeStep / m_Substeps;
 
-        //Attach to fixers
         CheckFixers();
 
-        //Look for Wind objs
         CheckWindObjects();
     }
     public void OnDrawGizmos()
     {
-
-        foreach (var n in m_Nodes)
+        if (m_ProxyMeshReady)
         {
-            Gizmos.color = Color.green;
-            Gizmos.DrawSphere(n.m_Pos, 0.1f);
-        }
-        foreach (var s in m_Springs)
-        {
-            Gizmos.color = Color.green;
-            Gizmos.DrawLine(s.m_NodeA.m_Pos, s.m_NodeB.m_Pos);
-        }
-        for (int i = 0; i < m_SurfaceTriangles.Count; i++)
-        {
-
-            Node nodeA = m_Nodes[m_SurfaceTriangles[i].x];
-            Node nodeB = m_Nodes[m_SurfaceTriangles[i].y];
-            Node nodeC = m_Nodes[m_SurfaceTriangles[i].z];
-
-            Gizmos.color = Color.red;
-            Gizmos.DrawSphere(nodeA.m_Pos, 0.2f);
-            Gizmos.DrawSphere(nodeB.m_Pos, 0.2f);
-            Gizmos.DrawSphere(nodeC.m_Pos, 0.2f);
-
-            Vector3 crossProduct = -Vector3.Cross(nodeB.m_Pos - nodeA.m_Pos, nodeC.m_Pos - nodeA.m_Pos).normalized;
-            Gizmos.DrawLine(nodeA.m_Pos, nodeA.m_Pos + crossProduct);
-            Gizmos.DrawLine(nodeB.m_Pos, nodeB.m_Pos + crossProduct);
-            Gizmos.DrawLine(nodeC.m_Pos, nodeC.m_Pos + crossProduct);
+            float factor = m_Mesh.bounds.size.magnitude*0.5f;
+            foreach (var n in m_Nodes)
+            {
+                Gizmos.color = Color.green;
+                Gizmos.DrawSphere(n.m_Pos, 0.05f);
+            }
+            foreach (var s in m_Springs)
+            {
+                Gizmos.color = Color.green;
+                Gizmos.DrawLine(s.m_NodeA.m_Pos, s.m_NodeB.m_Pos);
+            }
         }
     }
-    
+    private void OnDrawGizmosSelected()
+    {
+        if (m_ProxyMeshReady)
+        {
+            for (int i = 0; i < m_SurfaceTriangles.Count; i++)
+            {
+                Node nodeA = m_Nodes[m_SurfaceTriangles[i].x];
+                Node nodeB = m_Nodes[m_SurfaceTriangles[i].y];
+                Node nodeC = m_Nodes[m_SurfaceTriangles[i].z];
+
+                //Gizmos.color = new Color(nodeA.m_WindForce.magnitude * 5, 0.0f, 0.0f, 1.0f);
+                //Gizmos.DrawSphere(nodeA.m_Pos, 0.2f);
+                //Gizmos.color = new Color(nodeB.m_WindForce.magnitude * 5, 0.0f, 0.0f, 1.0f);
+                //Gizmos.DrawSphere(nodeB.m_Pos, 0.2f);
+                //Gizmos.color = new Color(nodeC.m_WindForce.magnitude * 5, 0.0f, 0.0f, 1.0f);
+                //Gizmos.DrawSphere(nodeC.m_Pos, 0.2f);
+
+                Gizmos.color = Color.blue;
+                Vector3 crossProduct = -Vector3.Cross(nodeB.m_Pos - nodeA.m_Pos, nodeC.m_Pos - nodeA.m_Pos);
+                crossProduct = Vector3.ClampMagnitude(crossProduct, 0.5f);
+                Gizmos.DrawLine(nodeA.m_Pos, nodeA.m_Pos + crossProduct);
+                Gizmos.DrawLine(nodeB.m_Pos, nodeB.m_Pos + crossProduct);
+                Gizmos.DrawLine(nodeC.m_Pos, nodeC.m_Pos + crossProduct);
+            }
+        }
+    }
+
 
     public void Update()
     {
         if (Input.GetKeyUp(KeyCode.P))
             this.m_Paused = !this.m_Paused;
-
-
 
         m_SubTimeStep = m_TimeStep / m_Substeps;
 
@@ -615,7 +624,7 @@ public class ElasticBehaviour : MonoBehaviour
     /// <param name="triangleList">The total triangle list generated from the parser. Each triangle is represented by a vector3int, which components store the index of the each node the triangle is formed of.</param>
     private void FindSurfaceTriangles(List<Vector3Int> triangleList)
     {
-        
+
         TriangleQualityComparer trisComparer = new TriangleQualityComparer();
 
         Dictionary<Vector3Int, Vector3Int> trisDictionary = new Dictionary<Vector3Int, Vector3Int>(trisComparer);

@@ -206,10 +206,10 @@ public class Tetrahedron
         Vector3 normal4 = Vector3.Cross(m_D.m_Pos - m_B.m_Pos, m_C.m_Pos - m_B.m_Pos);
 
 
-        return normal1.x * (m_A.m_Pos.x - p.x) + normal1.y * (m_A.m_Pos.y - p.y) + normal1.z * (m_A.m_Pos.z - p.z) <= 0.1 &&
-            normal2.x * (m_A.m_Pos.x - p.x) + normal2.y * (m_A.m_Pos.y - p.y) + normal2.z * (m_A.m_Pos.z - p.z) <= 0.1 &&
-            normal3.x * (m_A.m_Pos.x - p.x) + normal3.y * (m_A.m_Pos.y - p.y) + normal3.z * (m_A.m_Pos.z - p.z) <= 0.1 &&
-            normal4.x * (m_D.m_Pos.x - p.x) + normal4.y * (m_D.m_Pos.y - p.y) + normal4.z * (m_D.m_Pos.z - p.z) <= 0.1;
+        return normal1.x * (m_A.m_Pos.x - p.x) + normal1.y * (m_A.m_Pos.y - p.y) + normal1.z * (m_A.m_Pos.z - p.z) <=0.000001 &&
+            normal2.x * (m_A.m_Pos.x - p.x) + normal2.y * (m_A.m_Pos.y - p.y) + normal2.z * (m_A.m_Pos.z - p.z) <= 0.000001 &&
+            normal3.x * (m_A.m_Pos.x - p.x) + normal3.y * (m_A.m_Pos.y - p.y) + normal3.z * (m_A.m_Pos.z - p.z) <= 0.000001 &&
+            normal4.x * (m_D.m_Pos.x - p.x) + normal4.y * (m_D.m_Pos.y - p.y) + normal4.z * (m_D.m_Pos.z - p.z) <= 0.000001;
 
     }
 

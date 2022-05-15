@@ -12,7 +12,7 @@ public class ElasticBehaviourEditor : Editor
     {
         EditorGUILayout.HelpBox("Apply this component to any kind of mesh in which you desire to achive an elastic physical behavior.", MessageType.None);
         EditorGUILayout.HelpBox("To properly use this component, you need to add the necessary Tetgen archives to the parser component. Once added, a " +
-            "proxy tetrahedral mesh will be generated containing the actual mesh, in order to simulate the phyisics effects", MessageType.Info);
+            "proxy tetrahedral mesh will be generated containing the actual mesh, in order to simulate the phyisics effects.", MessageType.Info);
 
         base.OnInspectorGUI();
 
